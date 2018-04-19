@@ -171,12 +171,12 @@ func main() {
 		cli.StringFlag{
 			Name:  "username",
 			Value: "",
-			Usage: "registry user name",
+			Usage: "stash user name",
 		},
 		cli.StringFlag{
 			Name:  "password",
 			Value: "",
-			Usage: "registry user password",
+			Usage: "stash user password",
 		},
 		cli.StringFlag{
 			Name:  "trigger_uri",
