@@ -46,3 +46,12 @@ GLOBAL OPTIONS:
 cd prwatcher
 go install
 ```
+
+## to work with docker
+
+```
+cd prwatcher
+set GOOS=linux
+go build
+docker-compose up
+```

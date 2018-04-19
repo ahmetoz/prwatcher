@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  prwatcher:
+    build:
+      context: .
+    environment:
+      - HOST=http://stash.example.com
+      - PROJECT=foo
+      - REPOSITORY=bar
+      - USERNAME=user
+      - PASSWORD=1234567
+      - TRIGGER_URI=http://fabrika.example.com:8080/view/Fabrika/job/Demo/buildWithParameters?token=42&cause=pr-watcher
+      - DURATION=@every 5m
