@@ -45,7 +45,7 @@ func getPullRequests(host, project, repository, token string) *PullRequestsRespo
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", "Basic "+token)
 	res, _ := http.DefaultClient.Do(req)
-	defer res.Body.Close()
+
 	body, err := ioutil.ReadAll(res.Body)
 
 	if res.StatusCode != 200 {
@@ -61,6 +61,8 @@ func getPullRequests(host, project, repository, token string) *PullRequestsRespo
 	if err != nil {
 		log.Error(err)
 	}
+
+	defer res.Body.Close()
 
 	s, _ := getPullRequestsResponse([]byte(body))
 	return s
@@ -145,14 +147,17 @@ func triggerToUri(id int, trigger_uri string) {
 		active_pr_list[id] = 0 //0 means try later
 	}
 
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 
 	if res.StatusCode == 403 || res.StatusCode == 401 {
 		panic(string(body))
 	}
 
 	fmt.Println(string(body))
+	if err != nil {
+		log.Error(err)
+	}
+	defer res.Body.Close()
 }
 
 func main() {
