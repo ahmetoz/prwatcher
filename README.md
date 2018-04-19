@@ -1,5 +1,11 @@
 # prwatcher
 
+- Example usage:
+
+``` shell
+prwatcher --host http://stash.example.com --project foo --repository bar--username demo --password 123456 --trigger_uri http://fabrika.example.com:8080/view/Fabrika/job/Demo/buildWithParameters?token=42
+```
+
 ```shell
 
 NAME:
