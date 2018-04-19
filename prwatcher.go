@@ -190,7 +190,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "duration",
-			Value: "@every 5s",
+			Value: "@every 5m",
 			Usage: "job duration https://godoc.org/github.com/robfig/cron#hdr-Intervals",
 		},
 	}
