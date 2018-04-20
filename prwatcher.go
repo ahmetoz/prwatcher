@@ -14,9 +14,9 @@ import (
 )
 
 type TriggerData struct {
-	PR     int
+	PR      int
 	FromRef string
-	ToRef string
+	ToRef   string
 }
 
 type PullRequestsResponse struct {
@@ -30,10 +30,10 @@ type PullRequestsResponse struct {
 		CreatedDate int64  `json:"createdDate"`
 		UpdatedDate int64  `json:"updatedDate"`
 		FromRef     struct {
-			ID           string `json:"id"`
+			ID string `json:"id"`
 		} `json:"fromRef"`
-		ToRef     struct {
-			ID           string `json:"id"`
+		ToRef struct {
+			ID string `json:"id"`
 		} `json:"toRef"`
 	} `json:"values"`
 }
@@ -148,7 +148,7 @@ func getTriggerList(pull_requests *PullRequestsResponse) []TriggerData {
 }
 
 func triggerToUri(id int, data TriggerData, trigger_uri string) {
-	url := trigger_uri + "&cause=pr-watcher&pr=" + strconv.Itoa(data.PR) +"&fromRef=" + data.FromRef +"&toRef=" + data.ToRef
+	url := trigger_uri + "&cause=pr-watcher&pr=" + strconv.Itoa(data.PR) + "&fromRef=" + data.FromRef + "&toRef=" + data.ToRef
 	log.Info("sending post request to ", url)
 
 	req, _ := http.NewRequest("POST", url, nil)
