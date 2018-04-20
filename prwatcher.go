@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -10,8 +11,13 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"fmt"
 )
+
+type TriggerData struct {
+	PR     int
+	FromRef string
+	ToRef string
+}
 
 type PullRequestsResponse struct {
 	Size   int `json:"size"`
@@ -23,6 +29,12 @@ type PullRequestsResponse struct {
 		Closed      bool   `json:"closed"`
 		CreatedDate int64  `json:"createdDate"`
 		UpdatedDate int64  `json:"updatedDate"`
+		FromRef     struct {
+			ID           string `json:"id"`
+		} `json:"fromRef"`
+		ToRef     struct {
+			ID           string `json:"id"`
+		} `json:"toRef"`
 	} `json:"values"`
 }
 
@@ -76,20 +88,20 @@ var triggerCount int = 0
 func triggerJob(host, project, repository, token, trigger_uri string) {
 	pull_requests := getPullRequests(host, project, repository, token)
 	triggerList := getTriggerList(pull_requests)
-	for _, id := range triggerList {
-		log.Info("PR: ", id, " trigger starting")
-		triggerToUri(id, trigger_uri)
+	for _, data := range triggerList {
+		log.Info("PR: ", data.PR, " trigger starting")
+		triggerToUri(data.PR, data, trigger_uri)
 	}
 }
 
-func getTriggerList(pull_requests *PullRequestsResponse) []int {
+func getTriggerList(pull_requests *PullRequestsResponse) []TriggerData {
 	triggerCount++
 	if triggerCount%10 == 0 {
 		log.Info("triggered ", triggerCount, " times")
 		log.Info("active pull requests: ", active_pr_list)
 		log.Info("passive pull requests: ", passive_pr_list)
 	}
-	var triggerList []int
+	var triggerList []TriggerData
 	for k, v := range active_pr_list {
 		if v == 0 {
 			continue
@@ -123,27 +135,27 @@ func getTriggerList(pull_requests *PullRequestsResponse) []int {
 			} else {
 				log.Info("PR: ", pr.ID, " triggered before but updated on  ", pr.UpdatedDate, " so will be triggered again.")
 				active_pr_list[pr.ID] = pr.UpdatedDate
-				triggerList = append(triggerList, pr.ID)
+				triggerList = append(triggerList, TriggerData{pr.ID, pr.FromRef.ID, pr.ToRef.ID})
 			}
 		} else {
 			log.Info("New PR: ", pr.ID, " created on ", pr.CreatedDate, " updated on ", pr.UpdatedDate)
 			active_pr_list[pr.ID] = pr.UpdatedDate
-			triggerList = append(triggerList, pr.ID)
+			triggerList = append(triggerList, TriggerData{pr.ID, pr.FromRef.ID, pr.ToRef.ID})
 		}
 	}
 
 	return triggerList
 }
 
-func triggerToUri(id int, trigger_uri string) {
-	url := trigger_uri + "&cause=pr-watcher&pr=" + strconv.Itoa(id)
+func triggerToUri(id int, data TriggerData, trigger_uri string) {
+	url := trigger_uri + "&cause=pr-watcher&pr=" + strconv.Itoa(data.PR) +"&fromRef=" + data.FromRef +"&toRef=" + data.ToRef
 	log.Info("sending post request to ", url)
 
 	req, _ := http.NewRequest("POST", url, nil)
 
 	res, _ := http.DefaultClient.Do(req)
 	if res.StatusCode != 201 {
-		log.Error("PR: " , id, " trigger failed. Status: ", res.StatusCode)
+		log.Error("PR: ", id, " trigger failed. Status: ", res.StatusCode)
 		active_pr_list[id] = 0 //0 means try later
 	}
 
@@ -178,45 +190,45 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "host",
-			Value: "",
-			Usage: "host address of docker registry",
+			Name:   "host",
+			Value:  "",
+			Usage:  "host address of docker registry",
 			EnvVar: "HOST",
 		},
 		cli.StringFlag{
-			Name:  "project",
-			Value: "",
-			Usage: "Only projects for which the authenticated user has the PROJECT_VIEW permission will be returned.",
+			Name:   "project",
+			Value:  "",
+			Usage:  "Only projects for which the authenticated user has the PROJECT_VIEW permission will be returned.",
 			EnvVar: "PROJECT",
 		},
 		cli.StringFlag{
-			Name:  "repository",
-			Value: "latest",
-			Usage: "The authenticated user must have REPO_READ permission for the specified project to call this resource.",
+			Name:   "repository",
+			Value:  "latest",
+			Usage:  "The authenticated user must have REPO_READ permission for the specified project to call this resource.",
 			EnvVar: "REPOSITORY",
 		},
 		cli.StringFlag{
-			Name:  "username",
-			Value: "",
-			Usage: "stash user name",
+			Name:   "username",
+			Value:  "",
+			Usage:  "stash user name",
 			EnvVar: "USERNAME",
 		},
 		cli.StringFlag{
-			Name:  "password",
-			Value: "",
-			Usage: "stash user password",
+			Name:   "password",
+			Value:  "",
+			Usage:  "stash user password",
 			EnvVar: "PASSWORD",
 		},
 		cli.StringFlag{
-			Name:  "trigger_uri",
-			Value: "",
-			Usage: "job trigger uri - pr id will be added as query string to uri",
+			Name:   "trigger_uri",
+			Value:  "",
+			Usage:  "job trigger uri - pr id will be added as query string to uri",
 			EnvVar: "TRIGGER_URI",
 		},
 		cli.StringFlag{
-			Name:  "duration",
-			Value: "@every 5m",
-			Usage: "job duration https://godoc.org/github.com/robfig/cron#hdr-Intervals",
+			Name:   "duration",
+			Value:  "@every 5m",
+			Usage:  "job duration https://godoc.org/github.com/robfig/cron#hdr-Intervals",
 			EnvVar: "DURATION",
 		},
 	}
