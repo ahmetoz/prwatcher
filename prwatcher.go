@@ -253,6 +253,9 @@ func main() {
 			return cli.NewExitError("trigger_uri is required", 86)
 		}
 
+
+		infiniteChannel := make(chan bool)
+
 		token := basicAuth(c.String("username"), c.String("password"))
 		host := c.String("host")
 		project := c.String("project")
@@ -269,16 +272,13 @@ func main() {
 		}).Info("The PR watcher starting...")
 
 		triggerJob(host, project, repository, token, trigger_uri)
-
 		job := cron.New()
 		job.AddFunc(duration, func() {
 			triggerJob(host, project, repository, token, trigger_uri)
 		})
 		job.Start()
 
-		for true {
-
-		}
+		<-infiniteChannel
 
 		return nil
 	}
